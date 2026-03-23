@@ -565,6 +565,7 @@
         <a href="#deployment">Configuration & Deployment</a>
         <a href="#competitive">Competitive Analysis</a>
         <a href="#open-questions">Open Questions</a>
+        <a href="#mcp-addendum">Addendum: MCP vs. Stable Integrations</a>
         <a href="#sources">Sources</a>
     </nav>
 
@@ -925,6 +926,99 @@
             </div>
         </div>
 
+
+        <!-- ADDENDUM: MCP VS STABLE INTEGRATIONS -->
+        <h2 id="mcp-addendum">Addendum: MCP for Actions vs. Stable Integration Options</h2>
+        <div class="card">
+            <p>Workday's Agent Gateway supports both MCP (Model Context Protocol) and A2A (Agent-to-Agent) for third-party agent connectivity. But MCP is not the only way to wire actions into an enterprise agent platform&mdash;and it carries trade-offs that matter at scale. This section weighs MCP against more traditional integration paths.</p>
+        </div>
+
+        <button class="section-toggle" onclick="toggleSection(this)">Why MCP Appeals to Agent Builders</button>
+        <div class="section-content">
+            <div class="card">
+                <ol>
+                    <li><strong>Dynamic tool discovery</strong> &mdash; An MCP server advertises its capabilities at runtime. Agents can query &ldquo;what tools do you offer?&rdquo; and receive a machine-readable manifest, adapting to new capabilities without redeployment.</li>
+                    <li><strong>Session-aware context</strong> &mdash; Unlike stateless REST calls, MCP maintains session state across tool invocations. The agent doesn&rsquo;t re-authenticate or re-establish context between steps, reducing latency in multi-step workflows.</li>
+                    <li><strong>Write-once, use everywhere</strong> &mdash; A single MCP server can be consumed by IDE plugins, browser extensions, chat interfaces, and agent orchestrators alike. One integration point serves multiple surfaces.</li>
+                    <li><strong>Standardization momentum</strong> &mdash; OpenAI adopted MCP in March 2025 and deprecated its proprietary Assistants API (mid-2026 sunset). Microsoft invested in the standard. The Linux Foundation&rsquo;s Agentic AI Foundation now stewards governance.</li>
+                    <li><strong>Structured auditability</strong> &mdash; Every tool call and response is a structured message, making it straightforward to log, inspect, and gate sensitive actions through policy layers.</li>
+                </ol>
+            </div>
+        </div>
+
+        <button class="section-toggle" onclick="toggleSection(this)">MCP Risks &amp; Limitations</button>
+        <div class="section-content">
+            <div class="card">
+                <ol>
+                    <li><strong>Security surface is large and growing</strong> &mdash; Research shows deploying just 10 MCP plugins creates a <strong>92% probability of exploitation</strong>; even a single plugin carries ~9% risk. In early 2026 alone, 30 CVEs were filed in 60 days against MCP tooling. CVE-2025-6514 (CVSS 9.6) affected the widely-used <code>mcp-remote</code> package, enabling arbitrary OS command execution.
+                        <br><span class="source-pub">Sources: VentureBeat, Practical DevSecOps, OWASP MCP Top 10</span></li>
+                    <li><strong>Tool poisoning &amp; prompt injection</strong> &mdash; Invariant Labs demonstrated that malicious tool definitions can pass seamlessly into agent contexts. Sub-techniques include &ldquo;rug pulls&rdquo; (malicious updates to trusted tools), schema poisoning, and tool shadowing (fake duplicates). Real incidents include the Supabase/Cursor agent exploit (mid-2025) and the Asana MCP data leak (Jun 2025).
+                        <br><span class="source-pub">Sources: Data Science Dojo, Composio, AuthZed breach timeline</span></li>
+                    <li><strong>Evolving specification</strong> &mdash; MCP is still maturing with periodic breaking changes. Early adopters carry migration risk. The spec lacks built-in support for multi-turn agent negotiation, long-running async tasks, and cross-server memory.
+                        <br><span class="source-pub">Sources: Codecademy, Xenoss enterprise analysis</span></li>
+                    <li><strong>Scalability unknowns</strong> &mdash; MCP&rsquo;s session-based communication model introduces challenges at enterprise scale. Dynamic tool manifests can overwhelm agents when dozens of servers each expose many tools, creating selection ambiguity.</li>
+                    <li><strong>Implementation overhead</strong> &mdash; Building a production MCP server requires schema design, resource modeling, streaming support, and auth flows&mdash;significantly more effort than exposing a REST endpoint or using native connectors.</li>
+                </ol>
+            </div>
+        </div>
+
+        <button class="section-toggle" onclick="toggleSection(this)">Stable Alternatives for Enterprise Actions</button>
+        <div class="section-content">
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr><th>Approach</th><th>Strengths</th><th>Trade-offs</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Native REST / SOAP APIs</strong></td>
+                            <td>Battle-tested, deterministic, well-documented. Existing auth (OAuth 2.0, API keys) and rate-limiting infrastructure. Decades of enterprise hardening.</td>
+                            <td>Stateless&mdash;agents must manage context externally. Requires per-service integration code. No dynamic discovery.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Workday Integration Cloud (EIBs, Studio)</strong></td>
+                            <td>First-party support with built-in error handling, retry logic, and Workday security model. No third-party protocol dependency.</td>
+                            <td>Limited to Workday ecosystem. Not designed for real-time agentic tool calls. Batch-oriented.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>iPaaS / Middleware (MuleSoft, Workato, Boomi)</strong></td>
+                            <td>Pre-built connectors to hundreds of SaaS apps. Visual workflow builders. Enterprise governance and monitoring baked in.</td>
+                            <td>Licensing costs. Adds a hop. May not expose tool manifests in a format agents can dynamically consume.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Google A2A Protocol</strong></td>
+                            <td>Designed for peer agent collaboration with async workflows, structured negotiation, and decentralized identity. Better fit for multi-agent orchestration.</td>
+                            <td>Newer than MCP. Smaller ecosystem. Workday has announced A2A support but details are thin.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>IBM Agent Communication Protocol (ACP)</strong></td>
+                            <td>Built-in cross-agent memory, human-in-the-loop support, long-running task management. Addresses gaps MCP doesn&rsquo;t cover.</td>
+                            <td>IBM-originated, smaller adoption footprint. Not yet supported by Workday&rsquo;s Agent Gateway.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Direct SDK / gRPC</strong></td>
+                            <td>Maximum performance and type safety. Ideal for high-throughput, latency-sensitive integrations between known systems.</td>
+                            <td>Tight coupling. No dynamic discovery. Requires code changes for new capabilities.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <button class="section-toggle" onclick="toggleSection(this)">Recommendation: A Layered Approach</button>
+        <div class="section-content">
+            <div class="card">
+                <p>For enterprise deployments of the Sana Self-Service Agent, the emerging best practice is <strong>not to choose one protocol exclusively</strong> but to layer them by use case:</p>
+                <ol>
+                    <li><strong>MCP for agent-facing tool discovery</strong> &mdash; Where agents need to dynamically find and invoke capabilities across services, MCP&rsquo;s standardized manifests are the right fit. Route this traffic through an <strong>MCP Gateway</strong> (e.g., Cloudflare, Apigee) for centralized auth, rate limiting, and injection defense.</li>
+                    <li><strong>REST/SOAP for deterministic back-end actions</strong> &mdash; For well-defined operations (payroll runs, benefits enrollment, compliance reports), traditional APIs remain more predictable, auditable, and hardened. Wrap them behind MCP servers if agent discovery is needed, but keep the execution path through proven infrastructure.</li>
+                    <li><strong>A2A for cross-platform agent orchestration</strong> &mdash; When Workday agents need to collaborate with Salesforce, ServiceNow, or custom agents, A2A&rsquo;s peer negotiation model is more appropriate than MCP&rsquo;s client-server pattern.</li>
+                    <li><strong>iPaaS as the governance backbone</strong> &mdash; Regardless of protocol, enterprise middleware can provide the monitoring, retry logic, and compliance controls that raw protocol connections lack.</li>
+                </ol>
+                <p style="margin-top: 1rem; padding: 0.75rem; background: rgba(255,193,7,0.1); border-left: 3px solid #ffc107; border-radius: 4px;"><strong>Bottom line:</strong> MCP is the most promising protocol for agent-tool interoperability, but its security posture is not yet enterprise-grade. Organizations should adopt it with gateway controls, limit the blast radius of any single MCP server, and maintain stable API paths for mission-critical actions until the ecosystem matures.</p>
+            </div>
+        </div>
+
         <!-- SOURCES -->
         <h2 id="sources">Sources</h2>
         <h3>Official Workday</h3>
@@ -974,6 +1068,23 @@
             <li><a href="https://cloudwars.com/ai/workday-empowers-digital-workforce-with-agent-system-of-record-and-global-partnerships/">Workday Agent System of Record &amp; Partnerships</a> <span class="source-pub">— Cloud Wars</span></li>
             <li><a href="https://www.cio.com/article/4057700/workday-and-microsoft-collaborate-to-manage-agentic-ai-workers.html">Microsoft and Workday collaborate on agentic AI</a> <span class="source-pub">— CIO</span></li>
             <li><a href="https://www.hr-brew.com/stories/2026/03/17/workday-announces-new-ai-powered-capabilities-powered-by-sana-acquisition">Workday AI capabilities powered by Sana</a> <span class="source-pub">— HR Brew, Mar 2026</span></li>
+        </ol>
+
+
+        <h3>Addendum Sources</h3>
+        <ol class="source-list" start="34">
+            <li><a href="https://blog.workday.com/en-us/building-enterprise-intelligence-a-guide-to-ai-agent-protocols-for-multi-agent-systems.html">Building Enterprise Intelligence: A Guide to AI Agent Protocols</a> <span class="source-pub">&mdash; Workday Blog</span></li>
+            <li><a href="https://venturebeat.com/security/mcp-stacks-have-a-92-exploit-probability-how-10-plugins-became-enterprise/">MCP stacks have a 92% exploit probability</a> <span class="source-pub">&mdash; VentureBeat</span></li>
+            <li><a href="https://owasp.org/www-project-mcp-top-10/">OWASP MCP Top 10</a> <span class="source-pub">&mdash; OWASP Foundation</span></li>
+            <li><a href="https://www.practical-devsecops.com/mcp-security-vulnerabilities/">MCP Security Vulnerabilities: Prompt Injection and Tool Poisoning</a> <span class="source-pub">&mdash; Practical DevSecOps</span></li>
+            <li><a href="https://datasciencedojo.com/blog/mcp-security-risks-and-challenges/">The State of MCP Security in 2025</a> <span class="source-pub">&mdash; Data Science Dojo</span></li>
+            <li><a href="https://authzed.com/blog/timeline-mcp-breaches">A Timeline of MCP Security Breaches</a> <span class="source-pub">&mdash; AuthZed</span></li>
+            <li><a href="https://xenoss.io/blog/mcp-model-context-protocol-enterprise-use-cases-implementation-challenges">MCP in enterprise: real-world applications and challenges</a> <span class="source-pub">&mdash; Xenoss</span></li>
+            <li><a href="https://www.codecademy.com/article/mcp-vs-api-architecture-and-use-cases">MCP vs. APIs: Architecture &amp; Use Cases</a> <span class="source-pub">&mdash; Codecademy</span></li>
+            <li><a href="https://heidloff.net/article/mcp-acp-a2a-agent-protocols/">Comparison of Agent Protocols: MCP, ACP and A2A</a> <span class="source-pub">&mdash; Niklas Heidloff</span></li>
+            <li><a href="https://eleks.com/expert-opinion/model-context-protocol-rest-api/">Model Context Protocol vs. REST API: Which Approach is Better?</a> <span class="source-pub">&mdash; ELEKS</span></li>
+            <li><a href="https://auth0.com/blog/mcp-vs-api/">Why Can't I Just Use an API? Because Your AI Agent Needs MCP</a> <span class="source-pub">&mdash; Auth0</span></li>
+            <li><a href="https://www.heyuan110.com/posts/ai/2026-03-10-mcp-security-2026/">MCP Security 2026: 30 CVEs in 60 Days</a> <span class="source-pub">&mdash; Security Analysis, Mar 2026</span></li>
         </ol>
 
     </main>
